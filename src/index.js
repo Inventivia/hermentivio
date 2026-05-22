@@ -6,6 +6,12 @@ const SERVICE = {
   modules: ["landing", "health", "status", "dashboard", "webhooks"]
 };
 
+const SECURITY_HEADERS = {
+  "x-robots-tag": "noindex, nofollow",
+  "x-content-type-options": "nosniff",
+  "referrer-policy": "no-referrer"
+};
+
 const landingHtml = `<!doctype html>
 <html lang="es">
 <head>
@@ -474,6 +480,7 @@ function jsonResponse(payload, status = 200) {
   return Response.json(payload, {
     status,
     headers: {
+      ...SECURITY_HEADERS,
       "cache-control": "no-store"
     }
   });
@@ -539,6 +546,16 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
+    if (url.pathname === "/robots.txt") {
+      return new Response("User-agent: *\nDisallow: /\n", {
+        headers: {
+          ...SECURITY_HEADERS,
+          "content-type": "text/plain; charset=utf-8",
+          "cache-control": "public, max-age=3600"
+        }
+      });
+    }
+
     if (url.pathname === "/health") {
       return Response.json({
         ok: true,
@@ -557,6 +574,7 @@ export default {
     if (url.pathname === "/dashboard") {
       return new Response(renderDashboardHtml(), {
         headers: {
+          ...SECURITY_HEADERS,
           "content-type": "text/html; charset=utf-8",
           "cache-control": "public, max-age=60"
         }
@@ -569,6 +587,7 @@ export default {
 
     return new Response(landingHtml, {
       headers: {
+        ...SECURITY_HEADERS,
         "content-type": "text/html; charset=utf-8",
         "cache-control": "public, max-age=60"
       }
