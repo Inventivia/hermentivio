@@ -3,7 +3,7 @@ const SERVICE = {
   owner: "Inventivia Marketing",
   status: "online",
   version: "0.1.0",
-  modules: ["landing", "health", "status"]
+  modules: ["landing", "health", "status", "dashboard"]
 };
 
 const landingHtml = `<!doctype html>
@@ -315,6 +315,7 @@ const landingHtml = `<!doctype html>
         <div class="actions">
           <a class="button primary" href="/health">Ver estado</a>
           <a class="button secondary" href="/status">Ver status</a>
+          <a class="button secondary" href="/dashboard">Dashboard</a>
           <a class="button secondary" href="https://github.com/Inventivia/hermentivio">Repositorio GitHub</a>
         </div>
       </section>
@@ -331,11 +332,12 @@ const landingHtml = `<!doctype html>
             <div class="metric"><span>Deploy</span><strong>GitHub → Cloudflare</strong></div>
             <div class="metric"><span>Estado</span><strong>Operativo</strong></div>
             <div class="metric"><span>Versión</span><strong>0.1.0</strong></div>
-            <div class="metric"><span>Módulos</span><strong>landing · health · status</strong></div>
+            <div class="metric"><span>Módulos</span><strong>landing · health · status · dashboard</strong></div>
           </div>
           <div class="task-list">
             <div class="task"><div class="check">✓</div><div><span>Repositorio conectado</span><strong>Inventivia/hermentivio</strong></div></div>
             <div class="task"><div class="check">✓</div><div><span>Endpoint de salud</span><strong>/health responde JSON</strong></div></div>
+            <div class="task"><div class="check">✓</div><div><span>Dashboard visual</span><strong>/dashboard operativo</strong></div></div>
             <div class="task"><div class="check">✓</div><div><span>Siguiente fase</span><strong>Arquitectura y módulos IA</strong></div></div>
           </div>
         </div>
@@ -349,6 +351,122 @@ const landingHtml = `<!doctype html>
   </div>
 </body>
 </html>`;
+
+
+function renderDashboardHtml() {
+  const modules = SERVICE.modules.map((module) => `<span class="chip">${module}</span>`).join("");
+  const updatedAt = new Date().toLocaleString("es-ES", { timeZone: "Europe/Madrid" });
+
+  return `<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard — HermentivIO</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #08090a;
+      --panel: rgba(255,255,255,.045);
+      --panel-strong: rgba(255,255,255,.07);
+      --border: rgba(255,255,255,.09);
+      --border-soft: rgba(255,255,255,.055);
+      --text: #f7f8f8;
+      --muted: #a7adb8;
+      --dim: #62666d;
+      --accent: #7170ff;
+      --green: #10b981;
+      --yellow: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 20% 0%, rgba(113,112,255,.22), transparent 32rem),
+        radial-gradient(circle at 85% 15%, rgba(16,185,129,.10), transparent 28rem),
+        linear-gradient(180deg, #0d0e12 0%, var(--bg) 48%, #010102 100%);
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+    .wrap { width: min(1160px, calc(100% - 36px)); margin: 0 auto; padding: 28px 0 48px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 34px; }
+    .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-weight: 700; }
+    .logo { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 10px; background: linear-gradient(135deg, rgba(113,112,255,.30), rgba(255,255,255,.04)); }
+    .nav { display: flex; flex-wrap: wrap; gap: 10px; }
+    .nav a { color: #d0d6e0; text-decoration: none; border: 1px solid var(--border-soft); background: rgba(255,255,255,.025); border-radius: 999px; padding: 8px 12px; font-size: 13px; }
+    .hero { display: flex; justify-content: space-between; gap: 28px; align-items: flex-end; margin-bottom: 22px; }
+    h1 { margin: 0; font-size: clamp(34px, 6vw, 64px); line-height: .95; letter-spacing: -0.065em; }
+    .subtitle { color: var(--muted); max-width: 620px; line-height: 1.6; font-size: 17px; margin: 16px 0 0; }
+    .live { display: inline-flex; align-items: center; gap: 8px; color: #d0d6e0; border: 1px solid rgba(16,185,129,.24); background: rgba(16,185,129,.08); border-radius: 999px; padding: 9px 12px; white-space: nowrap; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 24px rgba(16,185,129,.9); }
+    .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 28px 0; }
+    .card { border: 1px solid var(--border); background: linear-gradient(180deg, var(--panel-strong), var(--panel)); border-radius: 18px; padding: 18px; box-shadow: inset 0 1px 0 rgba(255,255,255,.08); }
+    .card span { display: block; color: var(--dim); font-size: 12px; margin-bottom: 10px; }
+    .card strong { display: block; font-size: 18px; line-height: 1.2; }
+    .main { display: grid; grid-template-columns: 1.1fr .9fr; gap: 14px; }
+    .panel { border: 1px solid var(--border); background: rgba(255,255,255,.035); border-radius: 22px; overflow: hidden; }
+    .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--border-soft); color: #d0d6e0; }
+    .panel-body { padding: 18px; }
+    .timeline { display: grid; gap: 12px; }
+    .item { display: grid; grid-template-columns: 24px 1fr; gap: 12px; align-items: start; padding: 14px; border: 1px solid var(--border-soft); border-radius: 14px; background: rgba(0,0,0,.16); }
+    .check { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; color: var(--green); background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.28); font-size: 13px; }
+    .item strong { display: block; margin-bottom: 4px; }
+    .item p { margin: 0; color: var(--muted); line-height: 1.45; font-size: 14px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 10px; }
+    .chip { display: inline-flex; border: 1px solid var(--border-soft); border-radius: 999px; padding: 8px 11px; background: rgba(255,255,255,.025); color: #d0d6e0; font-size: 13px; }
+    .code { margin-top: 16px; padding: 14px; border: 1px solid var(--border-soft); border-radius: 14px; background: rgba(0,0,0,.22); color: #d0d6e0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; overflow-x: auto; }
+    .next { margin-top: 14px; border-left: 3px solid var(--accent); padding: 12px 14px; background: rgba(113,112,255,.08); border-radius: 12px; color: #d0d6e0; }
+    @media (max-width: 900px) { .hero, .topbar { align-items: flex-start; flex-direction: column; } .grid, .main { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <a class="brand" href="/"><span class="logo">H</span><span>HermentivIO</span></a>
+      <nav class="nav"><a href="/">Inicio</a><a href="/health">Health</a><a href="/status">Status JSON</a><a href="https://github.com/Inventivia/hermentivio">GitHub</a></nav>
+    </div>
+
+    <section class="hero">
+      <div>
+        <h1>Dashboard operativo</h1>
+        <p class="subtitle">Un panel visual para saber rápido si HermentivIO está vivo, qué módulos tiene activos y cuál es el siguiente paso de construcción.</p>
+      </div>
+      <div class="live"><span class="dot"></span>${SERVICE.status}</div>
+    </section>
+
+    <section class="grid">
+      <div class="card"><span>Servicio</span><strong>${SERVICE.name}</strong></div>
+      <div class="card"><span>Owner</span><strong>${SERVICE.owner}</strong></div>
+      <div class="card"><span>Versión</span><strong>${SERVICE.version}</strong></div>
+      <div class="card"><span>Última lectura</span><strong>${updatedAt}</strong></div>
+    </section>
+
+    <section class="main">
+      <div class="panel">
+        <div class="panel-head"><strong>Estado del sistema</strong><span>Cloudflare Worker</span></div>
+        <div class="panel-body timeline">
+          <div class="item"><div class="check">✓</div><div><strong>Landing pública</strong><p>La página principal está online y sirve como presencia inicial de HermentivIO.</p></div></div>
+          <div class="item"><div class="check">✓</div><div><strong>Health check</strong><p>La ruta /health sirve para comprobar desde fuera que el servicio responde.</p></div></div>
+          <div class="item"><div class="check">✓</div><div><strong>Status API</strong><p>La ruta /status entrega datos en JSON para futuras automatizaciones y monitores.</p></div></div>
+          <div class="item"><div class="check">✓</div><div><strong>Dashboard visual</strong><p>Esta pantalla resume el estado sin tener que leer JSON.</p></div></div>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <div class="panel-head"><strong>Módulos activos</strong><span>${SERVICE.modules.length} módulos</span></div>
+        <div class="panel-body">
+          <div class="chips">${modules}</div>
+          <div class="code">GET /status\nGET /health\nGET /dashboard</div>
+          <div class="next"><strong>Siguiente paso:</strong> conectar webhooks seguros para que HermentivIO pueda recibir eventos de n8n, Telegram o futuras automatizaciones.</div>
+        </div>
+      </aside>
+    </section>
+  </div>
+</body>
+</html>`;
+}
 
 export default {
   async fetch(request, env, ctx) {
@@ -366,6 +484,15 @@ export default {
       return Response.json({
         ...SERVICE,
         timestamp: new Date().toISOString()
+      });
+    }
+
+    if (url.pathname === "/dashboard") {
+      return new Response(renderDashboardHtml(), {
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "public, max-age=60"
+        }
       });
     }
 
