@@ -1,3 +1,11 @@
+const SERVICE = {
+  name: "HermentivIO",
+  owner: "Inventivia Marketing",
+  status: "online",
+  version: "0.1.0",
+  modules: ["landing", "health", "status"]
+};
+
 const landingHtml = `<!doctype html>
 <html lang="es">
 <head>
@@ -306,6 +314,7 @@ const landingHtml = `<!doctype html>
         </p>
         <div class="actions">
           <a class="button primary" href="/health">Ver estado</a>
+          <a class="button secondary" href="/status">Ver status</a>
           <a class="button secondary" href="https://github.com/Inventivia/hermentivio">Repositorio GitHub</a>
         </div>
       </section>
@@ -321,6 +330,8 @@ const landingHtml = `<!doctype html>
             <div class="metric"><span>Owner</span><strong>Inventivia Marketing</strong></div>
             <div class="metric"><span>Deploy</span><strong>GitHub → Cloudflare</strong></div>
             <div class="metric"><span>Estado</span><strong>Operativo</strong></div>
+            <div class="metric"><span>Versión</span><strong>0.1.0</strong></div>
+            <div class="metric"><span>Módulos</span><strong>landing · health · status</strong></div>
           </div>
           <div class="task-list">
             <div class="task"><div class="check">✓</div><div><span>Repositorio conectado</span><strong>Inventivia/hermentivio</strong></div></div>
@@ -346,8 +357,15 @@ export default {
     if (url.pathname === "/health") {
       return Response.json({
         ok: true,
-        service: "HermentivIO",
-        owner: "Inventivia Marketing"
+        service: SERVICE.name,
+        owner: SERVICE.owner
+      });
+    }
+
+    if (url.pathname === "/status") {
+      return Response.json({
+        ...SERVICE,
+        timestamp: new Date().toISOString()
       });
     }
 
