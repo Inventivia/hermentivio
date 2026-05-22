@@ -3,7 +3,7 @@ const SERVICE = {
   owner: "Inventivia Marketing",
   status: "online",
   version: "0.1.0",
-  modules: ["landing", "health", "status", "dashboard"]
+  modules: ["landing", "health", "status", "dashboard", "webhooks"]
 };
 
 const landingHtml = `<!doctype html>
@@ -332,7 +332,7 @@ const landingHtml = `<!doctype html>
             <div class="metric"><span>Deploy</span><strong>GitHub → Cloudflare</strong></div>
             <div class="metric"><span>Estado</span><strong>Operativo</strong></div>
             <div class="metric"><span>Versión</span><strong>0.1.0</strong></div>
-            <div class="metric"><span>Módulos</span><strong>landing · health · status · dashboard</strong></div>
+            <div class="metric"><span>Módulos</span><strong>landing · health · status · dashboard · webhooks</strong></div>
           </div>
           <div class="task-list">
             <div class="task"><div class="check">✓</div><div><span>Repositorio conectado</span><strong>Inventivia/hermentivio</strong></div></div>
@@ -451,6 +451,7 @@ function renderDashboardHtml() {
           <div class="item"><div class="check">✓</div><div><strong>Health check</strong><p>La ruta /health sirve para comprobar desde fuera que el servicio responde.</p></div></div>
           <div class="item"><div class="check">✓</div><div><strong>Status API</strong><p>La ruta /status entrega datos en JSON para futuras automatizaciones y monitores.</p></div></div>
           <div class="item"><div class="check">✓</div><div><strong>Dashboard visual</strong><p>Esta pantalla resume el estado sin tener que leer JSON.</p></div></div>
+          <div class="item"><div class="check">✓</div><div><strong>Webhook seguro</strong><p>La ruta POST /webhooks/ping está preparada para recibir eventos con secreto por cabecera.</p></div></div>
         </div>
       </div>
 
@@ -458,14 +459,80 @@ function renderDashboardHtml() {
         <div class="panel-head"><strong>Módulos activos</strong><span>${SERVICE.modules.length} módulos</span></div>
         <div class="panel-body">
           <div class="chips">${modules}</div>
-          <div class="code">GET /status\nGET /health\nGET /dashboard</div>
-          <div class="next"><strong>Siguiente paso:</strong> conectar webhooks seguros para que HermentivIO pueda recibir eventos de n8n, Telegram o futuras automatizaciones.</div>
+          <div class="code">GET /status\nGET /health\nGET /dashboard\nPOST /webhooks/ping</div>
+          <div class="next"><strong>Siguiente paso:</strong> configurar el secreto WEBHOOK_SECRET en Cloudflare y conectar n8n al endpoint POST /webhooks/ping.</div>
         </div>
       </aside>
     </section>
   </div>
 </body>
 </html>`;
+}
+
+
+function jsonResponse(payload, status = 200) {
+  return Response.json(payload, {
+    status,
+    headers: {
+      "cache-control": "no-store"
+    }
+  });
+}
+
+async function parseJsonBody(request) {
+  const contentType = request.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    return {};
+  }
+
+  try {
+    return await request.json();
+  } catch (error) {
+    return null;
+  }
+}
+
+async function handlePingWebhook(request, env) {
+  if (request.method !== "POST") {
+    return jsonResponse({
+      ok: false,
+      error: "method_not_allowed",
+      message: "Use POST. Este webhook no acepta GET público."
+    }, 405);
+  }
+
+  const configuredSecret = env.WEBHOOK_SECRET;
+  if (!configuredSecret) {
+    return jsonResponse({
+      ok: false,
+      error: "webhook_secret_not_configured",
+      message: "Falta configurar WEBHOOK_SECRET en Cloudflare Workers."
+    }, 503);
+  }
+
+  const receivedSecret = request.headers.get("x-hermentivio-secret");
+  if (!receivedSecret || receivedSecret !== configuredSecret) {
+    return jsonResponse({
+      ok: false,
+      error: "unauthorized"
+    }, 401);
+  }
+
+  const payload = await parseJsonBody(request);
+  if (payload === null) {
+    return jsonResponse({
+      ok: false,
+      error: "invalid_json"
+    }, 400);
+  }
+
+  return jsonResponse({
+    ok: true,
+    received: true,
+    service: SERVICE.name,
+    event: payload.event || "ping",
+    timestamp: new Date().toISOString()
+  });
 }
 
 export default {
@@ -494,6 +561,10 @@ export default {
           "cache-control": "public, max-age=60"
         }
       });
+    }
+
+    if (url.pathname === "/webhooks/ping") {
+      return handlePingWebhook(request, env);
     }
 
     return new Response(landingHtml, {
