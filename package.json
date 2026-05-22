@@ -1,0 +1,15 @@
+{
+  "name": "hermentivio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Worker inicial de HermentivIO para Inventivia Marketing",
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "check": "wrangler deploy --dry-run"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
